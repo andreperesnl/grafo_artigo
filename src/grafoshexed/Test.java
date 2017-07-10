@@ -22,10 +22,19 @@ import org.graphstream.ui.view.Viewer;
 
 public class Test {
 
-    public static final int NUM_COLS = 30;
-    public static final int NUM_ROWS = 30;
-    public static final Double RATE_Y = 0.577d;
+    public static final int NUM_COLS = 133;
+    public static final int NUM_ROWS = 90;
+    
+    public static final int SOURCE_X = 8;
+    public static final int SOURCE_Y = 53;
 
+    public static final int SINK_X = 123;
+    public static final int SINK_Y = 53;
+
+    public static final Double RATE_Y = 0.577d;
+    
+    
+    public static Viewer v;
     public static void main(String... args) {
         final JFrame frame = new JFrame("JHexed");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -59,6 +68,8 @@ public class Test {
                 return new Dimension(rect.getWidthAsInt(), rect.getHeightAsInt());
             }
         };
+        
+        
 
         content.addMouseListener(new MouseAdapter() {
 
@@ -86,59 +97,64 @@ public class Test {
 
 //        g.addAttribute("ui.stylesheet", "url('file:///fig.png')");
         Viewer view = g.display(false);
+        v = view;
 //        view.getDefaultView().setBackground(Color.red);
 
         System.out.println("OK");
 
-        frame.add(content, BorderLayout.CENTER);
+       // frame.add(content, BorderLayout.CENTER);
         frame.pack();
+        
         JButton bt = new JButton("Dijkstra");
         frame.add(bt);
         FlowLayout fl = new FlowLayout(1);
         frame.setLayout(fl);
 
+        JButton bt2 = new JButton("zoom");
+        frame.add(bt2);
+        
+        bt2.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                v.getDefaultView().getCamera().setViewPercent(0.5d);
+            }
+        });
+
+        frame.pack();
         frame.setVisible(true);
 
+        
         bt.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 Dijkstra d = new Dijkstra(Dijkstra.Element.NODE, null, "weight");
 
                 d.init(g);
-//                System.out.println(getNodeNameByCoord(0, 5));
-                d.setSource(g.getNode(getNodeNameByCoord(5, 15)));
-//                System.out.println(getNodeByCoord(g, 3, 5).getAttribute("weight").toString());
-                d.compute();
+                d.setSource(g.getNode(getNodeNameByCoord(SOURCE_X, SOURCE_Y)));
 
-//                Iterator<Edge> it = d.getPath(g.getNode("V6")).getEdgeIterator();
-                System.out.println(g.getNode(getNodeNameByCoord(9, 5)).toString());
-//                d.getPath(g.getNode(getNodeNameByCoord(5, 5))).
-                java.util.List<Node> l = d.getPath(g.getNode(getNodeNameByCoord(21, 21))).getNodePath();
-                Iterator<Node> it = d.getPath(g.getNode(getNodeNameByCoord(21, 21))).getNodeIterator();
-                Iterator<Edge> et = d.getPath(g.getNode(getNodeNameByCoord(21, 21))).getEdgeIterator();
+                d.compute();
+//          
+                java.util.List<Node> l = d.getPath(g.getNode(getNodeNameByCoord(SINK_X, SINK_Y))).getNodePath();
+                Iterator<Node> it = d.getPath(g.getNode(getNodeNameByCoord(SINK_X, SINK_Y))).getNodeIterator();
+                Iterator<Edge> et = d.getPath(g.getNode(getNodeNameByCoord(SINK_X, SINK_Y))).getEdgeIterator();
 
                 while (et.hasNext()) {
                     Edge ed = et.next();
-
-                    ed.addAttribute("ui.style", "arrow-shape: arrow; fill-color: red; stroke-width: 20; size: 3px; arrow-shape: arrow;");
-//                    ed.addAttribute("ui.style", "fill-color: red;");
-
+                    ed.addAttribute("ui.style", " fill-color: red; stroke-width: 10; size: 2px; ");
                 }
 
-                System.out.println("l" + l);
-
-                System.out.println("tamanho caminho " + it.hasNext());
-               
+                int i = 0;
                 while (it.hasNext()) {
+                    i++;
                     Node ed = it.next();
 
                     int xx = ed.getAttribute("cx");
                     int yy = ed.getAttribute("cy");
-                    System.out.println("Trocando valor xy" + xx + "-" + yy);
                     ((DefaultIntegerHexModel) engine.getModel()).setValueAt(xx, yy, 2);
 
-                    ed.addAttribute("ui.style", "fill-color: red; size:10px; ");
+                    ed.addAttribute("ui.style", "fill-color: red; size:6px; ");
                 }
+                System.out.println("TOTAL DE TORRES: "+i);
 
                 content.repaint();
 
@@ -165,22 +181,15 @@ public class Test {
         System.out.println("coddlunas:" + numColunas);
         System.out.println("Lindddhas:" + numLinhas);
         Graph g = new SingleGraph("Teste");
-       System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer");
-       
-       
-       
-       g.addAttribute("ui.stylesheet", "node { fill-color:blue;} ");
-       
-       
-       g.addAttribute("ui.stylesheet", "graph { fill-mode:  image-scaled-ratio-max; "
+        System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer");
+
+        g.addAttribute("ui.stylesheet", "node { fill-color:blue;} ");
+
+        g.addAttribute("ui.stylesheet", "graph { fill-mode:  image-scaled-ratio-max; "
                 + "fill-image: url('img/fig.png'); "
-                +"} ");
-       
-//g.addAttribute("ui.stylesheet", "node { fill-image: url('fig.png');  fill-mode: image-scaled-ratio-max;  } ");
-//        g.addAttribute("ui.stylesheet", "graph {  fill-color: blue; }");
+                + "} ");
+
         //criar os nós 
-        
-        
         g.setAttribute("ui.stylesheet", "url(img/c.css)");
         for (int j = 0; j < numLinhas; j++) {
             for (int i = 0; i < numColunas; i++) {
@@ -189,7 +198,6 @@ public class Test {
 
                 // g.getNode("V" + i + "." + j).addAttribute("ui.style", "size: 5px; ");
 //                g.getNode("V" + i + "." + j).addAttribute("ui.style", " fill-mode: image-scaled; fill-image:  url('file:///fig.png');  ");
-
                 g.getNode("V" + i + "." + j).setAttribute("layout.frozen");
                 g.getNode("V" + i + "." + j).setAttribute("ui.frozen");
 
@@ -256,66 +264,40 @@ public class Test {
                     }
                 }
 
-//                if (i < numLinhas - 1 && j < numColunas - 1) {
-//                    g.addEdge("E" + i + "." + j + "-" + (i + 1) + "." + j,
-//                            "V" + i + "." + j,
-//                            "V" + (i + 1) + "." + j,true);
-//
-//                    g.addEdge("E" + i + "." + j + "-" + (i) + "." + (j + 1),
-//                            "V" + i + "." + j,
-//                            "V" + i + "." + (j + 1),true);
-//                }
-//
-//                if (i == numLinhas - 1 && j < numColunas - 1) {
-//                    g.addEdge("E" + i + "." + j + "-" + (i) + "." + (j + 1),
-//                            "V" + i + "." + j,
-//                            "V" + i + "." + (j + 1),true);
-//                }
-//
-//                if (j == (numColunas - 1) && i < numLinhas - 1) {
-//                    g.addEdge("E" + i + "." + j + "-" + (i + 1) + "." + j,
-//                            "V" + i + "." + j,
-//                            "V" + (i + 1) + "." + j,true);
-//
-//                }
-//            }
-//                HexPosition[] positions = engine.getNeighbourPositions(i, j, 1);
-////            HexPosition atual = engine.getNeighbourPositions(i, j, 1);
-//                ArrayList<HexPosition> lista = new ArrayList<HexPosition>(Arrays.asList(positions));
-//                for (HexPosition p : lista) {
-//                    System.out.println("(" + i + "," + j + ")P:" + p.toString());
-//                    if (p.getColumn() < NUM_COLS && p.getRow() < NUM_ROWS) {
-//                        if (p.getColumn() > i) {
-//                            try {
-//                                g.addEdge("E" + i + "." + j + "-" + p.getColumn() + "." + p.getRow(),
-//                                        "V" + i + "." + j, "V" + p.getColumn() + "." + p.getRow(), true);
-//                            } catch (Exception e) {
-//
-//                            }
-//                        }
-//                    }
-//                }
             }
         }
-        for (Edge e : g.getEdgeSet()) {
-//            e.addAttribute("ui.style", "stroke-width: 1px;");
-//            e.addAttribute("ui.style", "arrow-size: 1px, 1px;");
-//            e.addAttribute("ui.style", "size: 1px; ");
 
-//            e.addAttribute("weig/ht", 1);
-//            e.addAttribute("label", e.toString());
-//            e.setAttribute("directed", true);
-        }
-//        getNodeByCoord(g, 3, 5).setAttribute("weight", 9000);
-//        getNodeByCoord(g, 5, 3).setAttribute("weight", 9000);
         getNodeByCoord(g, 5, 3).setAttribute("weight", Double.POSITIVE_INFINITY);
         getNodeByCoord(g, 5, 6).setAttribute("weight", Double.POSITIVE_INFINITY);
         getNodeByCoord(g, 3, 5).setAttribute("weight", Double.POSITIVE_INFINITY);
         getNodeByCoord(g, 6, 4).setAttribute("weight", Double.POSITIVE_INFINITY);
-//        System.out.println(getNodeByCoord(g, 3, 5).getAttribute("weight").toString());
-//        getEdgeNameByCoord(0, 0, 0, 0)
 
-//        g.display();
+        getNodeByCoord(g, 8, 18).setAttribute("weight", Double.POSITIVE_INFINITY);
+        getNodeByCoord(g, 9, 18).setAttribute("weight", Double.POSITIVE_INFINITY);
+        getNodeByCoord(g, 10, 18).setAttribute("weight", Double.POSITIVE_INFINITY);
+        
+        getNodeByCoord(g, 7, 20).setAttribute("weight", Double.POSITIVE_INFINITY);
+        getNodeByCoord(g, 8, 20).setAttribute("weight", Double.POSITIVE_INFINITY);
+        getNodeByCoord(g, 8, 21).setAttribute("weight", Double.POSITIVE_INFINITY);
+        getNodeByCoord(g, 9, 20).setAttribute("weight", Double.POSITIVE_INFINITY);
+        
+        getNodeByCoord(g, 7, 19).setAttribute("weight", Double.POSITIVE_INFINITY);
+        getNodeByCoord(g, 8, 19).setAttribute("weight", Double.POSITIVE_INFINITY);
+        
+        getNodeByCoord(g, 9, 19).setAttribute("weight", Double.POSITIVE_INFINITY);
+        getNodeByCoord(g, 16, 24).setAttribute("weight", Double.POSITIVE_INFINITY);
+
+        for (Node n : g.getNodeSet()) {
+       //     n.setAttribute("label", n.getId());
+            System.out.println(n.getAttribute("weight").toString());
+            if (Double.valueOf(n.getAttribute("weight").toString()) >= Double.POSITIVE_INFINITY) {
+//                n.setAttribute("ui.style", "fill-color: blue;");
+                System.out.println("Setando classe->" + n.toString());
+                n.setAttribute("ui.class", "infinity");
+            } else {
+            }
+        }
+
         g.addAttribute("ui.quality");
         g.addAttribute("ui.antialias");
         return g;
