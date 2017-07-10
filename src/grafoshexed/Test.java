@@ -173,7 +173,7 @@ public class Test {
        
        
        g.addAttribute("ui.stylesheet", "graph { fill-mode:  image-scaled-ratio-max; "
-                + "fill-image: url('file:///fig.png'); "
+                + "fill-image: url('img/fig.png'); "
                 +"} ");
        
 //g.addAttribute("ui.stylesheet", "node { fill-image: url('fig.png');  fill-mode: image-scaled-ratio-max;  } ");
@@ -181,7 +181,7 @@ public class Test {
         //criar os nós 
         
         
-        g.setAttribute("ui.stylesheet", "url(c:\\temp\\c.css)");
+        g.setAttribute("ui.stylesheet", "url(img/c.css)");
         for (int j = 0; j < numLinhas; j++) {
             for (int i = 0; i < numColunas; i++) {
 

@@ -1,0 +1,23 @@
+graph { 
+	size: 100px;  
+
+	fill-mode:   image-scaled-ratio-max; 
+    fill-image: url('img/fig.png');
+	
+
+	
+} 
+
+
+node { 
+	
+	size: 4px;
+
+} 
+
+
+edge {
+		arrow-size: 10px;
+	arrow-shape: none;
+	
+}
