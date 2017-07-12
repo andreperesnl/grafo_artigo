@@ -16,6 +16,7 @@ edge {
     arrow-size: 10px;
     arrow-shape: none;
     fill-color: rgba(200,200,200,0);
+    /*fill-color: b/lack;*/
 }
 
 node.infinity{
@@ -25,6 +26,11 @@ node.infinity{
 
 node.vegetacao{
     fill-color:green;
+     size: 7px;
+}
+
+node.agua{
+    fill-color:blue;
      size: 7px;
 }
 
