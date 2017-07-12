@@ -1,30 +1,37 @@
 package grafoshexed;
 
-import com.igormaznitsa.jhexed.engine.*;
-import com.igormaznitsa.jhexed.engine.misc.HexPosition;
-import com.igormaznitsa.jhexed.engine.misc.HexRect2D;
-import com.igormaznitsa.jhexed.renders.swing.ColorHexRender;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import org.graphstream.algorithm.Dijkstra;
 import org.graphstream.graph.Edge;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.Node;
 import org.graphstream.graph.implementations.SingleGraph;
+import org.graphstream.stream.file.FileSink;
+import org.graphstream.stream.file.FileSinkDGS;
+import org.graphstream.ui.graphicGraph.GraphicGraph;
+import org.graphstream.ui.swingViewer.DefaultView;
+import org.graphstream.ui.swingViewer.LayerRenderer;
+import org.graphstream.ui.swingViewer.util.DefaultCamera;
 import org.graphstream.ui.view.Viewer;
 
 public class Test {
 
     public static final int NUM_COLS = 133;
     public static final int NUM_ROWS = 90;
-    
+
     public static final int SOURCE_X = 8;
     public static final int SOURCE_Y = 53;
 
@@ -32,79 +39,32 @@ public class Test {
     public static final int SINK_Y = 53;
 
     public static final Double RATE_Y = 0.577d;
+    public static final Double VEGETACAO = 5d;
     
     
+    public static final Double DISTANCIA = 400d;
+    public static final Double RAZAO_H = 1.15d;
+    
+
     public static Viewer v;
+
     public static void main(String... args) {
         final JFrame frame = new JFrame("JHexed");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new BorderLayout());
 
-        final HexEngine<Graphics2D> engine = new HexEngine<Graphics2D>(20, 20, HexEngine.ORIENTATION_VERTICAL);
-        engine.setModel(new DefaultIntegerHexModel(NUM_COLS, NUM_ROWS, -1));
-
-        final Color[] ALLOWEDCOLORS = new Color[]{Color.white, Color.orange, Color.blue, Color.red, Color.green, Color.magenta, Color.yellow, Color.GRAY};
-
-        engine.setRenderer(new ColorHexRender() {
-
-            @Override
-            public Color getFillColor(HexEngineModel<?> model, int col, int row) {
-                final DefaultIntegerHexModel intmodel = (DefaultIntegerHexModel) model;
-                return ALLOWEDCOLORS[intmodel.getValueAt(col, row) % ALLOWEDCOLORS.length];
-            }
-
-        });
-
-        final JComponent content = new JComponent() {
-
-            @Override
-            protected void paintComponent(Graphics g) {
-                engine.draw((Graphics2D) g);
-            }
-
-            @Override
-            public Dimension getPreferredSize() {
-                final HexRect2D rect = engine.getVisibleSize();
-                return new Dimension(rect.getWidthAsInt(), rect.getHeightAsInt());
-            }
-        };
-        
-        
-
-        content.addMouseListener(new MouseAdapter() {
-
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                System.out.println(e.getX());
-                final HexPosition position = engine.pointToHex(e.getX(), e.getY());
-                System.out.println(position);
-                if (engine.getModel().isPositionValid(position)) {
-                    final DefaultIntegerHexModel model = (DefaultIntegerHexModel) engine.getModel();
-                    Integer value = model.getValueAt(position);
-                    if (value > 7) {
-                        value = 0;
-                    } else {
-                        value++;
-                    }
-                    model.setValueAt(position, value);
-                }
-                content.repaint();
-            }
-
-        });
-
-        Graph g = construirGrafo(engine);
+        Graph g = construirGrafo();
 
 //        g.addAttribute("ui.stylesheet", "url('file:///fig.png')");
-        Viewer view = g.display(false);
+        Viewer view = g.display(true);
         v = view;
 //        view.getDefaultView().setBackground(Color.red);
 
         System.out.println("OK");
 
-       // frame.add(content, BorderLayout.CENTER);
+        // frame.add(content, BorderLayout.CENTER);
         frame.pack();
-        
+
         JButton bt = new JButton("Dijkstra");
         frame.add(bt);
         FlowLayout fl = new FlowLayout(1);
@@ -112,19 +72,19 @@ public class Test {
 
         JButton bt2 = new JButton("zoom");
         frame.add(bt2);
-        
-        
+
         bt2.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                v.getDefaultView().getCamera().setViewPercent(0.5d);
+
+                v.getDefaultView().getCamera().setViewPercent(0.8d);
+
             }
         });
 
         frame.pack();
         frame.setVisible(true);
 
-        
         bt.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -139,10 +99,24 @@ public class Test {
                 Iterator<Node> it = d.getPath(g.getNode(getNodeNameByCoord(SINK_X, SINK_Y))).getNodeIterator();
                 Iterator<Edge> et = d.getPath(g.getNode(getNodeNameByCoord(SINK_X, SINK_Y))).getEdgeIterator();
 
+                Double distancia = 0d;
                 while (et.hasNext()) {
                     Edge ed = et.next();
                     ed.addAttribute("ui.style", " fill-color: red; stroke-width: 10; size: 2px; ");
+                    Double y1 =  Double.valueOf(ed.getNode0().getAttribute("y").toString());
+                    Double y2 =  Double.valueOf(ed.getNode1().getAttribute("y").toString());
+                    
+                    System.out.println("y1: "+ed.getNode0().getAttribute("y").toString()+" - "+ed.getNode1().getAttribute("y").toString());
+                    if( Math.abs(y1-y2) < 0.01d){
+                        distancia += DISTANCIA;
+                        System.out.println("Mesmo eixo");
+                    }else{
+                        distancia += (DISTANCIA*RAZAO_H);
+                        System.out.println("Diagonal");
+                    }
+                        
                 }
+                System.out.println("DISTANCIA TOTAL:"+distancia);
 
                 int i = 0;
                 while (it.hasNext()) {
@@ -151,14 +125,13 @@ public class Test {
 
                     int xx = ed.getAttribute("cx");
                     int yy = ed.getAttribute("cy");
-                    ((DefaultIntegerHexModel) engine.getModel()).setValueAt(xx, yy, 2);
+//                    ((DefaultIntegerHexModel) engine.getModel()).setValueAt(xx, yy, 2);
 
                     ed.addAttribute("ui.style", "fill-color: red; size:6px; ");
                 }
-                System.out.println("TOTAL DE TORRES: "+i);
+                System.out.println("TOTAL DE TORRES: " + i);
 
-                content.repaint();
-
+//                content.repaint();
             }
         });
     }
@@ -175,9 +148,9 @@ public class Test {
         return "E" + vx + "." + vy + "-" + wx + "." + wy;
     }
 
-    public static Graph construirGrafo(HexEngine<Graphics2D> engine) {
-        Integer numColunas = engine.getModel().getColumnNumber();
-        Integer numLinhas = engine.getModel().getRowNumber();
+    public static Graph construirGrafo() {
+        Integer numColunas = NUM_COLS;
+        Integer numLinhas = NUM_ROWS;
 
         System.out.println("coddlunas:" + numColunas);
         System.out.println("Lindddhas:" + numLinhas);
@@ -268,39 +241,145 @@ public class Test {
             }
         }
 
-        getNodeByCoord(g, 5, 3).setAttribute("weight", Double.POSITIVE_INFINITY);
-        getNodeByCoord(g, 5, 6).setAttribute("weight", Double.POSITIVE_INFINITY);
-        getNodeByCoord(g, 3, 5).setAttribute("weight", Double.POSITIVE_INFINITY);
-        getNodeByCoord(g, 6, 4).setAttribute("weight", Double.POSITIVE_INFINITY);
+        inicarPonderacoes(g);
 
-        getNodeByCoord(g, 8, 18).setAttribute("weight", Double.POSITIVE_INFINITY);
-        getNodeByCoord(g, 9, 18).setAttribute("weight", Double.POSITIVE_INFINITY);
-        getNodeByCoord(g, 10, 18).setAttribute("weight", Double.POSITIVE_INFINITY);
-        
-        getNodeByCoord(g, 7, 20).setAttribute("weight", Double.POSITIVE_INFINITY);
-        getNodeByCoord(g, 8, 20).setAttribute("weight", Double.POSITIVE_INFINITY);
-        getNodeByCoord(g, 8, 21).setAttribute("weight", Double.POSITIVE_INFINITY);
-        getNodeByCoord(g, 9, 20).setAttribute("weight", Double.POSITIVE_INFINITY);
-        
-        getNodeByCoord(g, 7, 19).setAttribute("weight", Double.POSITIVE_INFINITY);
-        getNodeByCoord(g, 8, 19).setAttribute("weight", Double.POSITIVE_INFINITY);
-        
-        getNodeByCoord(g, 9, 19).setAttribute("weight", Double.POSITIVE_INFINITY);
-        getNodeByCoord(g, 16, 24).setAttribute("weight", Double.POSITIVE_INFINITY);
+        for (Edge e : getNodeByCoord(g, 16, 24).getEdgeSet()) {
+            e.setAttribute("ui.style", "fill-color:red;");
+        }
 
         for (Node n : g.getNodeSet()) {
-       //     n.setAttribute("label", n.getId());
-            System.out.println(n.getAttribute("weight").toString());
             if (Double.valueOf(n.getAttribute("weight").toString()) >= Double.POSITIVE_INFINITY) {
-//                n.setAttribute("ui.style", "fill-color: blue;");
+                n.setAttribute("ui.style", "fill-color: blue;");
                 System.out.println("Setando classe->" + n.toString());
                 n.setAttribute("ui.class", "infinity");
             } else {
+                if (Double.valueOf(n.getAttribute("weight").toString()) == VEGETACAO) {
+                    n.setAttribute("ui.class", "vegetacao");
+                    n.setAttribute("ui.style", "fill-color: green;");
+                }
             }
         }
 
-        g.addAttribute("ui.quality");
-        g.addAttribute("ui.antialias");
         return g;
+    }
+
+    private static void inicarPonderacoes(Graph g) {
+        /*
+        Marialva SINK 53
+         */
+
+        ponderaLinha(g, 40, 50, 41, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 40, 50, 42, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 39, 50, 43, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 39, 50, 44, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 38, 49, 45, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 38, 49, 46, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 37, 49, 47, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 37, 49, 48, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 36, 49, 49, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 36, 49, 50, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 36, 49, 51, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 38, 49, 52, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 38, 48, 53, Double.POSITIVE_INFINITY,"infinity");
+
+        ponderaLinha(g, 39, 48, 54, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 40, 48, 55, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 40, 48, 56, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 41, 48, 57, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 43, 45, 58, Double.POSITIVE_INFINITY,"infinity");
+
+        /*
+        Mandaguari
+         */
+        ponderaLinha(g, 77, 81, 41, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 70, 81, 42, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 67, 79, 43, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 67, 79, 44, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 67, 79, 45, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 67, 79, 46, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 67, 78, 47, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 67, 78, 48, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 67, 78, 48, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 67, 78, 49, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 67, 78, 50, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 67, 78, 51, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 67, 78, 52, Double.POSITIVE_INFINITY,"infinity");
+
+        ponderaLinha(g, 67, 77, 53, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 67, 77, 54, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 67, 78, 55, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 68, 78, 56, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 68, 77, 57, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 68, 77, 58, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 68, 77, 59, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 68, 77, 60, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 68, 77, 61, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 68, 77, 62, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 68, 77, 63, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 68, 77, 64, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 68, 77, 65, Double.POSITIVE_INFINITY,"infinity");
+
+        ponderaLinha(g, 70, 77, 66, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 71, 77, 67, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 74, 77, 68, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 75, 77, 69, Double.POSITIVE_INFINITY,"infinity");
+        ponderaLinha(g, 77, 77, 70, Double.POSITIVE_INFINITY,"infinity");
+
+        /*
+        vegetacao apucarana
+         */
+        ponderaLinha(g, 108, 108, 39, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 108, 110, 40, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 106, 110, 41, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 105, 112, 42, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 105, 112, 43, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 104, 115, 44, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 104, 115, 45, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 104, 115, 46, VEGETACAO,"vegetacao");
+        
+        ponderaLinha(g, 104, 115, 46, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 104, 115, 47, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 104, 115, 48, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 104, 115, 49, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 104, 115, 50, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 104, 115, 51, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 106, 115, 52, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 108, 115, 53, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 108, 115, 54, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 108, 115, 55, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 108, 115, 56, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 108, 115, 57, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 108, 115, 58, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 108, 115, 59, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 108, 115, 60, VEGETACAO,"vegetacao");
+        
+        ponderaLinha(g, 108, 115, 61, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 108, 115, 62, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 108, 115, 63, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 108, 115, 64, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 110, 115, 65, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 110, 115, 66, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 110, 115, 67, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 110, 115, 68, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 108, 115, 69, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 108, 115, 70, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 108, 115, 71, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 108, 115, 72, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 108, 115, 73, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 109, 115, 74, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 109, 115, 75, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 110, 115, 76, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 110, 115, 77, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 111, 115, 78, VEGETACAO,"vegetacao");
+        ponderaLinha(g, 111, 115, 79, VEGETACAO,"vegetacao");
+    }
+
+    public static void ponderaLinha(Graph g, int x1, int x2, int y, double fator, String classe) {
+        for (int i = x1; i <= x2; i++) {
+            Node n = getNodeByCoord(g, i, y);
+            Double peso = Double.valueOf(n.getAttribute("weight").toString());
+            n.setAttribute("weight", peso * fator);
+            n.setAttribute("ui.class", classe);
+        }
     }
 }

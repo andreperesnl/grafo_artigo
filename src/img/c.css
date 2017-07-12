@@ -1,34 +1,33 @@
 graph { 
-    size: 100px;  
+    /*size: 100px;*/  
     fill-mode:   image-scaled-ratio-max; 
     fill-image: url('img/fig.png');
-
-
-
+    padding:  50px;
 } 
 
 
 node { 
-
     size: 4px;
-    fill-color: rgba(150,150,150,200);
-
+    fill-color: rgba(150,150,150,0);
 } 
 
 
 edge {
     arrow-size: 10px;
     arrow-shape: none;
-    fill-color: rgba(200,200,200,200);
+    fill-color: rgba(200,200,200,0);
 }
 
 node.infinity{
     fill-color:purple;
-     size: 10px;
-    
+     size: 7px;
+}
+
+node.vegetacao{
+    fill-color:green;
+     size: 7px;
 }
 
 node.hard{
     fill-color:yellow;
-    
 }
