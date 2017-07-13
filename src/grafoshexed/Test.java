@@ -1,12 +1,15 @@
 package grafoshexed;
 
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import javax.swing.*;
@@ -94,79 +97,135 @@ public class Test {
 
         bt.addActionListener(new ActionListener() {
             @Override
-            public void actionPerformed(ActionEvent e) {
+            public void actionPerformed(ActionEvent ev) {
                 Path p = conversor.caminhoMinimo(g, g.getNode(getNodeNameByCoord(SOURCE_X, SOURCE_Y)), g.getNode(getNodeNameByCoord(SINK_X, SINK_Y)));
 
-                java.util.List<String> nosEscolhidos = new ArrayList<>();
+                List<Edge> ll = p.getEdgePath();
+
+                Integer torresVertice = 0;
+                Integer torresTotal = 0;
+                for (Edge e : ll) {
+                    Double peso = Double.valueOf(e.getAttribute("weight").toString());
+                    if (e.hasAttribute("torreVertice")) {
+                        if (e.getAttribute("torreVertice").equals(true)) {
+                            torresVertice++;
+                        }
+                    }
+                    if (e.hasAttribute("interno")) {
+                        if (e.getAttribute("interno").equals(true)) {
+                            torresTotal++;
+                        }
+                    }
+                }
+
+                Set<String> nosEscolhidos = new TreeSet<>();
+                Set<String> idArestas = new TreeSet<>();
+
+                Node antN = null;
+
                 for (Node n : p.getNodeSet()) {
                     nosEscolhidos.add(n.getAttribute("noOriginal"));
                     g.getEdge(n.getAttribute("arestaOriginal")).setAttribute("ui.style", "fill-color: red;");
+                    idArestas.add(n.getAttribute("arestaOriginal").toString());
+                    Node tmp = g.getNode(n.getAttribute("noOriginal"));
+                    if (antN != null) {
+                        if (!tmp.equals(antN)) {
+//                            System.out.println("atual-" + tmp.getId());
+//                            System.out.println("Anterior-" + antN.getId());
+                        }
+                    }
+//                    antN = g.getNode(n.getAttribute("noOriginal"));
+                }
+
+                Double distancia = 0d;
+                Integer torresVertices = 0;
+                Edge anterior = null;
+                for (String ed : idArestas) {
+                    Edge tmp = g.getEdge(ed);
+                    if (tmp.getAttribute("diagonal").equals(1)) {
+                        distancia += DISTANCIA * RAZAO_H;
+                    } else {
+                        distancia += DISTANCIA;
+                    }
+                    if (anterior != null) {
+                        if (!tmp.equals(anterior)) {
+                            if (!tmp.getAttribute("diagonal").equals(anterior.getAttribute("diagonal"))) {
+                                System.out.println("Vértice!");
+                                torresVertices++;
+                            }
+                        }
+                    }
+                    anterior = tmp;
+                }
+
+                System.out.println("Total de arestas:" + idArestas.size());
+                System.out.println("Total de torres V:" + torresVertices);
+                System.out.println("Distância estimada:" + distancia);
+                lbKm.setText("Distância: " + distancia);
+                lbTorres.setText("Torres:" + torresTotal);
+                lbTorresVertices.setText("Torres V:" + torresVertice);
+
+                Dijkstra d = new Dijkstra(Dijkstra.Element.NODE, null, "weight");
+
+                d.init(g);
+                d.setSource(g.getNode(getNodeNameByCoord(SOURCE_X, SOURCE_Y)));
+
+                d.compute();
+
+//                java.util.List<Node> l = d.getPath(g.getNode(getNodeNameByCoord(SINK_X, SINK_Y))).getNodePath();
+                Iterator<Node> it = d.getPath(g.getNode(getNodeNameByCoord(SINK_X, SINK_Y))).getNodeIterator();
+                Iterator<Edge> et = d.getPath(g.getNode(getNodeNameByCoord(SINK_X, SINK_Y))).getEdgeIterator();
+
+                Double distancia2 = 0d;
+                Integer torres = 0;
+                Integer torresV = 0;
+                boolean ultimoEixo = true;
+                while (et.hasNext()) {
+                    Edge ed = et.next();
+//                    ed.addAttribute("ui.style", " fill-color: yellow; stroke-width: 10; size: 2px; ");
+                    Double y1 = Double.valueOf(ed.getNode0().getAttribute("y").toString());
+                    Double y2 = Double.valueOf(ed.getNode1().getAttribute("y").toString());
+
+//                    System.out.println("y1: " + ed.getNode0().getAttribute("y").toString() + " - " + ed.getNode1().getAttribute("y").toString());
+                    if (Math.abs(y1 - y2) < 0.01d) {
+                        distancia2 += DISTANCIA;
+                        if (ultimoEixo == false) {
+                            torresV++;
+                        } else {
+                            torres++;
+                        }
+//                        System.out.println("Mesmo eixo");
+                        ultimoEixo = true;
+                    } else {
+                        distancia2 += (DISTANCIA * RAZAO_H);
+
+                        if (ultimoEixo) {
+                            torresV++;
+                        } else {
+                            torres++;
+                        }
+
+//                        System.out.println("Diagonal");
+                        ultimoEixo = false;
+                    }
 
                 }
-              
-
-//
-//                Dijkstra d = new Dijkstra(Dijkstra.Element.NODE, null, "weight");
-//
-//                d.init(g);
-//                d.setSource(g.getNode(getNodeNameByCoord(SOURCE_X, SOURCE_Y)));
-//
-//                d.compute();
-//          
-//                java.util.List<Node> l = d.getPath(g.getNode(getNodeNameByCoord(SINK_X, SINK_Y))).getNodePath();
-//                Iterator<Node> it = d.getPath(g.getNode(getNodeNameByCoord(SINK_X, SINK_Y))).getNodeIterator();
-//                Iterator<Edge> et = d.getPath(g.getNode(getNodeNameByCoord(SINK_X, SINK_Y))).getEdgeIterator();
-//
-//                Double distancia = 0d;
-//                Integer torres = 0;
-//                Integer torresV = 0;
-//                boolean ultimoEixo = true;
-//                while (et.hasNext()) {
-//                    Edge ed = et.next();
-//                    ed.addAttribute("ui.style", " fill-color: red; stroke-width: 10; size: 2px; ");
-//                    Double y1 = Double.valueOf(ed.getNode0().getAttribute("y").toString());
-//                    Double y2 = Double.valueOf(ed.getNode1().getAttribute("y").toString());
-//
-////                    System.out.println("y1: " + ed.getNode0().getAttribute("y").toString() + " - " + ed.getNode1().getAttribute("y").toString());
-//                    if (Math.abs(y1 - y2) < 0.01d) {
-//                        distancia += DISTANCIA;
-//                        if (ultimoEixo == false) {
-//                            torresV++;
-//                        } else {
-//                            torres++;
-//                        }
-////                        System.out.println("Mesmo eixo");
-//                        ultimoEixo = true;
-//                    } else {
-//                        distancia += (DISTANCIA * RAZAO_H);
-//
-//                        if (ultimoEixo) {
-//                            torresV++;
-//                        } else {
-//                            torres++;
-//                        }
-//
-////                        System.out.println("Diagonal");
-//                        ultimoEixo = false;
-//                    }
-//
-//                }
-//                System.out.println("DISTANCIA TOTAL:" + distancia);
+                System.out.println("DISTANCIA2 TOTAL:" + distancia2);
 //                lbKm.setText("Distância:" + distancia);
 //                lbTorres.setText("Torres:" + torres);
 //                lbTorresVertices.setText("Torres Vértice:" + torresV);
 //
-//                int i = 0;
-//                while (it.hasNext()) {
-//                    i++;
-//                    Node ed = it.next();
-//
-//                    int xx = ed.getAttribute("cx");
-//                    int yy = ed.getAttribute("cy");
-////                    ((DefaultIntegerHexModel) engine.getModel()).setValueAt(xx, yy, 2);
-//
-//                    ed.addAttribute("ui.style", "fill-color: red; size:6px; ");
-//                }
+                int i = 0;
+                while (it.hasNext()) {
+                    i++;
+                    Node ed = it.next();
+
+                    int xx = ed.getAttribute("cx");
+                    int yy = ed.getAttribute("cy");
+//                    ((DefaultIntegerHexModel) engine.getModel()).setValueAt(xx, yy, 2);
+
+//                    ed.addAttribute("ui.style", "fill-color: orange; size:6px; ");
+                }
 //                System.out.println("TOTAL DE TORRES: " + i);
 //
 ////                content.repaint();
@@ -312,6 +371,7 @@ public class Test {
         Marialva SINK 53
          */
 
+//        ponderaLinha(g, 39, 50, 40, Double.POSITIVE_INFINITY, "infinity");
         ponderaLinha(g, 39, 50, 41, Double.POSITIVE_INFINITY, "infinity");
         ponderaLinha(g, 40, 50, 42, Double.POSITIVE_INFINITY, "infinity");
         ponderaLinha(g, 39, 50, 43, Double.POSITIVE_INFINITY, "infinity");
@@ -335,6 +395,7 @@ public class Test {
         /*
         Mandaguari
          */
+        ponderaLinha(g, 77, 81, 40, Double.POSITIVE_INFINITY, "infinity");
         ponderaLinha(g, 77, 81, 41, Double.POSITIVE_INFINITY, "infinity");
         ponderaLinha(g, 70, 81, 42, Double.POSITIVE_INFINITY, "infinity");
         ponderaLinha(g, 67, 79, 43, Double.POSITIVE_INFINITY, "infinity");

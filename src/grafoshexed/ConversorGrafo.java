@@ -84,7 +84,19 @@ public class ConversorGrafo {
                     Integer diagonalEntrada = gOriginal.getEdge(entrada.getAttribute("arestaOriginal")).getAttribute("diagonal");
                     Integer diagonalSaida = gOriginal.getEdge(saida.getAttribute("arestaOriginal")).getAttribute("diagonal");
                     Double w = Double.valueOf(n.getAttribute("weight").toString());
-                    g.addEdge(entrada.getId() + "-" + saida.getId(), entrada, saida, true).setAttribute("weight", (diagonalEntrada + diagonalSaida + 1)*w);
+                    Edge tmp = g.addEdge(entrada.getId() + "-" + saida.getId(), entrada, saida, true);
+
+                    if (Math.abs(diagonalEntrada - diagonalSaida) > 0) {
+                        tmp.setAttribute("weight", (diagonalEntrada + diagonalSaida + 1) * w);
+                    }else{
+                        tmp.setAttribute("weight", 1* w);
+                    }
+
+//                    if(diagonalEntrada > 0 && diagonalSaida > 0){
+                    if (Math.abs(diagonalEntrada - diagonalSaida) > 0) {
+                        tmp.addAttribute("torreVertice", true);
+                    }
+                    tmp.addAttribute("interno", true);
                 }
             }
             g.removeNode(n);
